@@ -4,6 +4,9 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Laptop Store – szczegóły produktu</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" href="/css/styles.css" />
     <script type="module" src="/js/product.js"></script>
   </head>
@@ -12,7 +15,7 @@
       <a class="site-logo" href="/">Laptop Store</a>
     </header>
 
-    <main class="page">
+    <main class="page product-page">
       <a class="back-link" href="/">← Wróć do katalogu</a>
       <p class="status" role="status"></p>
 
@@ -28,8 +31,10 @@
             Specyfikacja
           </button>
         </div>
-        <section class="tab-panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview"></section>
-        <section class="tab-panel" id="panel-specs" role="tabpanel" aria-labelledby="tab-specs" hidden></section>
+        <div class="tab-panels">
+          <section class="tab-panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview"></section>
+          <section class="tab-panel" id="panel-specs" role="tabpanel" aria-labelledby="tab-specs" hidden></section>
+        </div>
       </article>
     </main>
   </body>

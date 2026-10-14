@@ -56,6 +56,7 @@ function openSpecsTab() {
 }
 
 async function loadSpecs() {
+  specsPanel.replaceChildren(loadingIndicator());
   try {
     const specs = await fetchJson(`/api/products/${encodeURIComponent(productId)}/specs`);
     specsPanel.replaceChildren(attributeList(specs, SPEC_ATTRIBUTES));
@@ -75,6 +76,14 @@ function selectTab(selectedTab) {
     tab.setAttribute("aria-selected", String(isSelected));
     document.getElementById(tab.getAttribute("aria-controls")).hidden = !isSelected;
   }
+}
+
+function loadingIndicator() {
+  const indicator = element("p", "loading", "Ładowanie…");
+  const spinner = element("span", "spinner");
+  spinner.setAttribute("aria-hidden", "true");
+  indicator.prepend(spinner);
+  return indicator;
 }
 
 function showNotFound() {
