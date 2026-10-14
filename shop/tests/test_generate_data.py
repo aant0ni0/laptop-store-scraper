@@ -7,14 +7,13 @@ from statistics import correlation
 import pytest
 from generate_data import (
     DUPLICATE_COUNT,
-    OUTPUT_PATH,
-    PAGE_COUNT,
-    PAGE_SIZE,
     PRODUCT_COUNT,
     SEED,
     generate_catalog,
     generate_products,
 )
+
+from shop.catalog import DATA_PATH, PAGE_COUNT, PAGE_SIZE
 
 EXPECTED_ATTRIBUTES = {
     # listing
@@ -154,7 +153,7 @@ def test_generation_is_deterministic():
 
 
 def test_saved_catalog_matches_generator(catalog):
-    saved = json.loads(OUTPUT_PATH.read_text("utf-8"))
+    saved = json.loads(DATA_PATH.read_text("utf-8"))
     assert saved == catalog, "products.json is stale - run scripts/generate_data.py"
 
 

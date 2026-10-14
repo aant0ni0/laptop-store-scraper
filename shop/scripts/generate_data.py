@@ -15,17 +15,15 @@ import random
 from dataclasses import dataclass
 from datetime import date, timedelta
 from itertools import batched
-from pathlib import Path
+
+from shop.catalog import DATA_PATH, PAGE_COUNT, PAGE_SIZE
 
 SEED = 42
 PRODUCT_COUNT = 438
 # Fixed reference date instead of date.today(), so the file does not change from day to day.
 CATALOG_DATE = date(2026, 10, 1)
 CATALOG_AGE_DAYS = 730
-OUTPUT_PATH = Path(__file__).resolve().parents[1] / "data" / "products.json"
 
-PAGE_COUNT = 8
-PAGE_SIZE = 56
 DUPLICATE_COUNT = PAGE_COUNT * PAGE_SIZE - PRODUCT_COUNT
 FOREIGN_CURRENCY_SHARE = 0.15
 MISSING_VALUE_SHARE = 0.2
@@ -394,9 +392,9 @@ def spread_duplicates_across_pages(products: list[dict], rng: random.Random) -> 
 
 def main() -> None:
     catalog = generate_catalog()
-    OUTPUT_PATH.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    DATA_PATH.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", "utf-8")
     unique_count = len({product["id"] for product in catalog})
-    print(f"Saved {len(catalog)} entries ({unique_count} unique products) to {OUTPUT_PATH}")
+    print(f"Saved {len(catalog)} entries ({unique_count} unique products) to {DATA_PATH}")
 
 
 if __name__ == "__main__":
