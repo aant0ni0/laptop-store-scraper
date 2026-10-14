@@ -6,27 +6,27 @@ Kontrakt projektu. Każdy punkt odhaczamy dopiero z dowodem (test, komenda albo 
 
 ### Obowiązkowe
 
-- [ ] min. 400 rekordów (plan: 438 unikalnych + 10 duplikatów = 448 wpisów)
-- [ ] min. 22 atrybuty (plan: 24 — 12 na liście, 12 na stronie szczegółów)
-- [ ] paginacja — min. 5 podstron (plan: 8 po 56 wpisów)
-- [ ] strona szczegółów dla każdego rekordu z min. 8 dodatkowymi atrybutami
-- [ ] dwie struktury: tabela (podstrony nieparzyste) i karty `article` (parzyste)
-- [ ] semantyczne klasy i atrybuty (`product`, `price`, `data-id`), bez generowanych nazw
-- [ ] rekordy w pliku JSON, wstawiane przez `fetch` — w źródle HTML (Ctrl+U) brak rekordów
-- [ ] doładowywanie porcjami przy przewijaniu strony (infinite scroll)
-- [ ] sztuczne opóźnienie 300–2000 ms przy każdej porcji
+- [x] min. 400 rekordów — 438 unikalnych + 10 duplikatów = 448 wpisów (`test_catalog_spreads_duplicates_across_pages`)
+- [x] min. 22 atrybuty — 24: 12 na liście, 6 w szczegółach, 6 w specyfikacji (`test_every_product_has_all_attributes`)
+- [x] paginacja — 8 podstron po 56 wpisów (`test_chunks_from_all_pages_cover_the_whole_catalog`)
+- [x] strona szczegółów `product.html?id=` z 12 dodatkowymi atrybutami (`test_product_details_exclude_specs`, `test_product_specs_contain_only_spec_fields`)
+- [x] dwie struktury: tabela (podstrony nieparzyste) i karty `article` (parzyste) — `catalog.js`
+- [x] semantyczne klasy i atrybuty (`product`, `price`, `data-id`, `data-currency`), bez generowanych nazw
+- [x] rekordy w pliku JSON, wstawiane przez `fetch` — w źródle HTML brak rekordów (`test_index_page_is_served_without_products`, `test_product_page_is_served_without_product_data`)
+- [x] doładowywanie porcjami po 14 przy przewijaniu (`IntersectionObserver` w `catalog.js`)
+- [x] sztuczne opóźnienie 300–2000 ms przy każdej porcji (`test_chunk_response_is_delayed_by_configured_range`)
 
 ### Utrudnienia z 4.0 (min. 3 — wybrane 4)
 
-- [ ] ceny jako „1 299,00 zł”, część w EUR/USD
-- [ ] braki w dwóch polach (`rating`, `warranty_months`) u min. 15% rekordów
-- [ ] min. 8 duplikatów rozrzuconych po różnych podstronach (plan: 10)
-- [ ] niespójne formaty dat: `2026-08-26`, `26.08.2026`, „wczoraj”
+- [x] ceny jako „1 299,00 zł”, 16% w EUR/USD (`test_prices_are_text_in_several_currencies`)
+- [x] braki w `rating` i `warranty_months` u ok. 22% rekordów (`test_two_fields_have_missing_values`)
+- [x] 10 duplikatów, każdy na innej podstronie niż oryginał (`test_catalog_spreads_duplicates_across_pages`)
+- [x] niespójne formaty dat: `2026-08-26`, `26.08.2026`, „wczoraj” (`test_dates_use_inconsistent_formats`)
 
 ### Utrudnienia z 5.0 (min. 2)
 
-- [ ] własny serwer Flask zwracający 429 z nagłówkiem `Retry-After`
-- [ ] atrybuty widoczne dopiero po interakcji — zakładka „Specyfikacja” ładowana po kliknięciu
+- [x] własny serwer Flask zwracający 429 z nagłówkiem `Retry-After` (`test_api_returns_429_with_retry_after_when_limit_is_exceeded`, `test_rate_limit.py`)
+- [x] atrybuty widoczne dopiero po interakcji — zakładka „Specyfikacja” pobierana z `/specs` po kliknięciu (`product.js`)
 
 ## Scraper (PARSER) — `scraper/`
 
