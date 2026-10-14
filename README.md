@@ -7,13 +7,10 @@ Projekt pary na Laboratorium nr 1 — parser strony www (poziom 5.0).
 - **AUTOR** buduje sklep z laptopami (`shop/`), którego produkty są wstrzykiwane JavaScriptem.
 - **PARSER** pisze scraper w Selenium (`scraper/`), który pobiera, czyści i analizuje dane.
 
-Pełna lista wymagań: [docs/requirements.md](docs/requirements.md).
-
 ## Struktura
 
 ```
 laptop-store-scraper/
-├── docs/          # wymagania i dokumentacja projektu
 ├── shop/          # AUTOR — Flask + HTML/CSS/JS
 │   ├── scripts/   # generator danych
 │   ├── data/      # products.json

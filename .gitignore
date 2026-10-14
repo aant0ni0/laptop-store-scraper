@@ -16,6 +16,3 @@ scraper/output/*
 .DS_Store
 .idea/
 .vscode/
-
-# Claude Code local preview config
-.claude/
