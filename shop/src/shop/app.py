@@ -6,6 +6,7 @@ from pathlib import Path
 from flask import Flask, request
 
 from shop.catalog import DATA_PATH, PAGE_COUNT, PAGE_SIZE
+from shop.rate_limit import SlidingWindowRateLimiter
 
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
 DEFAULT_CHUNK_SIZE = 14
@@ -32,9 +33,25 @@ def create_app(data_path: Path = DATA_PATH) -> Flask:
     app.json.sort_keys = False
     app.json.ensure_ascii = False
     app.config["CHUNK_DELAY_SECONDS"] = (0.3, 2.0)
+    app.config["RATE_LIMIT_REQUESTS"] = 20
+    app.config["RATE_LIMIT_WINDOW_SECONDS"] = 10
 
     catalog = json.loads(data_path.read_text("utf-8"))
     products_by_id = {product["id"]: product for product in catalog}
+    rate_limiter = SlidingWindowRateLimiter()
+
+    @app.before_request
+    def limit_api_requests():
+        if not request.path.startswith("/api/"):
+            return None
+        retry_after = rate_limiter.try_acquire(
+            request.remote_addr,
+            app.config["RATE_LIMIT_REQUESTS"],
+            app.config["RATE_LIMIT_WINDOW_SECONDS"],
+        )
+        if retry_after is None:
+            return None
+        return {"error": "too many requests"}, 429, {"Retry-After": str(retry_after)}
 
     @app.get("/")
     def index():

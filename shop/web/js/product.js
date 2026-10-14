@@ -1,4 +1,4 @@
-import { fetchJson } from "./api.js";
+import { fetchJson, requestErrorMessage } from "./api.js";
 import {
   DETAIL_ATTRIBUTES,
   LISTING_ATTRIBUTES,
@@ -32,7 +32,10 @@ async function loadProduct() {
     if (error.status === 404) {
       showNotFound();
     } else {
-      statusMessage.textContent = "Nie udało się wczytać produktu. Odśwież stronę.";
+      statusMessage.textContent = requestErrorMessage(
+        error,
+        "Nie udało się wczytać produktu. Odśwież stronę.",
+      );
     }
   }
 }
@@ -56,10 +59,12 @@ async function loadSpecs() {
   try {
     const specs = await fetchJson(`/api/products/${encodeURIComponent(productId)}/specs`);
     specsPanel.replaceChildren(attributeList(specs, SPEC_ATTRIBUTES));
-  } catch {
-    specsPanel.replaceChildren(
-      element("p", "status", "Nie udało się wczytać specyfikacji. Kliknij zakładkę ponownie."),
+  } catch (error) {
+    const message = requestErrorMessage(
+      error,
+      "Nie udało się wczytać specyfikacji. Kliknij zakładkę ponownie.",
     );
+    specsPanel.replaceChildren(element("p", "status", message));
     specsRequest = null;
   }
 }

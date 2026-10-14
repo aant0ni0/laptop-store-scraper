@@ -12,7 +12,37 @@ CATALOG = json.loads(DATA_PATH.read_text("utf-8"))
 def client():
     app = create_app()
     app.config["CHUNK_DELAY_SECONDS"] = (0, 0)
+    app.config["RATE_LIMIT_REQUESTS"] = 10_000
     return app.test_client()
+
+
+@pytest.fixture
+def rate_limited_client():
+    app = create_app()
+    app.config["CHUNK_DELAY_SECONDS"] = (0, 0)
+    return app.test_client()
+
+
+def test_api_returns_429_with_retry_after_when_limit_is_exceeded(rate_limited_client):
+    for _ in range(20):
+        assert rate_limited_client.get("/api/products/1").status_code == 200
+
+    response = rate_limited_client.get("/api/products/1")
+
+    assert response.status_code == 429
+    assert 1 <= int(response.headers["Retry-After"]) <= 10
+    assert "error" in response.json
+
+
+def test_rate_limit_skips_page_files_and_other_clients(rate_limited_client):
+    for _ in range(21):
+        rate_limited_client.get("/api/products/1")
+
+    assert rate_limited_client.get("/css/styles.css").status_code == 200
+    other_client = rate_limited_client.get(
+        "/api/products/1", environ_base={"REMOTE_ADDR": "10.0.0.2"}
+    )
+    assert other_client.status_code == 200
 
 
 def test_chunk_response_is_delayed_by_configured_range(monkeypatch):

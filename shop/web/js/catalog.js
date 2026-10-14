@@ -1,4 +1,4 @@
-import { fetchJson } from "./api.js";
+import { fetchJson, requestErrorMessage } from "./api.js";
 import { LISTING_ATTRIBUTES, attributeList, cssClass, displayValue, element } from "./product-view.js";
 
 const CHUNK_SIZE = 14;
@@ -52,7 +52,7 @@ async function loadNextChunk() {
     if (error.status === 400) {
       showInvalidPageMessage();
     } else {
-      showLoadError();
+      showLoadError(error);
     }
   } finally {
     isLoading = false;
@@ -65,8 +65,8 @@ function watchLoadTrigger() {
   loadTriggerObserver.observe(loadTrigger);
 }
 
-function showLoadError() {
-  statusMessage.textContent = "Nie udało się wczytać produktów.";
+function showLoadError(error) {
+  statusMessage.textContent = requestErrorMessage(error, "Nie udało się wczytać produktów.");
   retryButton.hidden = false;
 }
 
