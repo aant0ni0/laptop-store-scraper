@@ -4,6 +4,8 @@ import time
 from collections import defaultdict, deque
 from collections.abc import Callable
 
+RetryAfterSeconds = int
+
 
 class SlidingWindowRateLimiter:
     def __init__(self, clock: Callable[[], float] = time.monotonic) -> None:
@@ -11,7 +13,9 @@ class SlidingWindowRateLimiter:
         self._request_times_by_client: defaultdict[str, deque[float]] = defaultdict(deque)
         self._lock = threading.Lock()
 
-    def try_acquire(self, client_id: str, max_requests: int, window_seconds: float) -> int | None:
+    def try_acquire(
+        self, client_id: str, max_requests: int, window_seconds: float
+    ) -> RetryAfterSeconds | None:
         with self._lock:
             now = self._clock()
             request_times = self._request_times_by_client[client_id]

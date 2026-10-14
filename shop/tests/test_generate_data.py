@@ -16,7 +16,6 @@ from generate_data import (
 from shop.catalog import DATA_PATH, PAGE_COUNT, PAGE_SIZE
 
 EXPECTED_ATTRIBUTES = {
-    # listing
     "id",
     "name",
     "price",
@@ -29,7 +28,6 @@ EXPECTED_ATTRIBUTES = {
     "date_added",
     "warranty_months",
     "url",
-    # details
     "cpu",
     "ram_gb",
     "storage_gb",
@@ -45,8 +43,8 @@ EXPECTED_ATTRIBUTES = {
 }
 
 
-PLN_PRICE = re.compile(r"^\d{1,3}( \d{3})*,\d{2} zł$")  # 4 499,00 zł
-FOREIGN_PRICE = re.compile(r"^[€$]\d{1,3}(,\d{3})*\.\d{2}$")  # €1,045.99
+PLN_PRICE = re.compile(r"^\d{1,3}( \d{3})*,\d{2} zł$")
+FOREIGN_PRICE = re.compile(r"^[€$]\d{1,3}(,\d{3})*\.\d{2}$")
 DATE_FORMATS = {
     "iso": re.compile(r"^\d{4}-\d{2}-\d{2}$"),
     "dotted": re.compile(r"^\d{2}\.\d{2}\.\d{4}$"),
@@ -56,7 +54,6 @@ DATE_FORMATS = {
 
 @pytest.fixture(scope="module")
 def products() -> list[dict]:
-    """Clean products, before data quality issues are added."""
     return generate_products(random.Random(SEED))
 
 
@@ -119,7 +116,8 @@ def test_catalog_spreads_duplicates_across_pages(catalog):
 def test_duplicates_are_exact_copies(catalog):
     first_seen = {}
     for product in catalog:
-        assert first_seen.setdefault(product["id"], product) == product
+        original = first_seen.setdefault(product["id"], product)
+        assert original == product
 
 
 def test_prices_are_text_in_several_currencies(catalog):

@@ -1,14 +1,3 @@
-"""Generate the laptop catalog used by the shop (shop/data/products.json).
-
-Generation runs in two steps:
-1. Clean products: the category decides which components fit, components decide
-   the price and weight.
-2. Data quality issues the scraper has to handle: prices as text in several currencies,
-   missing values, inconsistent date formats and duplicates spread across pages.
-
-A fixed seed makes the output reproducible.
-"""
-
 import json
 import math
 import random
@@ -20,7 +9,6 @@ from shop.catalog import DATA_PATH, PAGE_COUNT, PAGE_SIZE
 
 SEED = 42
 PRODUCT_COUNT = 438
-# Fixed reference date instead of date.today(), so the file does not change from day to day.
 CATALOG_DATE = date(2026, 10, 1)
 CATALOG_AGE_DAYS = 730
 
@@ -224,7 +212,6 @@ def generate_products(rng: random.Random, count: int = PRODUCT_COUNT) -> list[di
     used_names = set()
     for product_id in range(1, count + 1):
         product = generate_product(product_id, rng)
-        # Unique names keep real products distinguishable from the duplicates added later.
         while product["name"] in used_names:
             product = generate_product(product_id, rng)
         used_names.add(product["name"])
@@ -320,8 +307,9 @@ def product_price(
         + ram_gb * 45
         + storage_gb * price_per_storage_gb
     )
-    price *= rng.uniform(0.9, 1.12)  # market noise: similar laptops never cost exactly the same
-    return float(round(price / 100) * 100 - 1)  # shop-style price, e.g. 4499
+    market_noise = rng.uniform(0.9, 1.12)
+    price_ending_in_99 = round(price * market_noise / 100) * 100 - 1
+    return float(price_ending_in_99)
 
 
 def product_weight(profile: CategoryProfile, screen_size_in: float, rng: random.Random) -> float:
@@ -330,9 +318,8 @@ def product_weight(profile: CategoryProfile, screen_size_in: float, rng: random.
 
 
 def product_rating(review_count: int, rng: random.Random) -> float:
-    # Few reviews -> extreme ratings are likely; many reviews -> rating settles near the mean.
-    spread = 0.9 / math.sqrt(1 + review_count / 15)
-    rating = rng.gauss(4.3, spread)
+    spread_shrinking_with_reviews = 0.9 / math.sqrt(1 + review_count / 15)
+    rating = rng.gauss(4.3, spread_shrinking_with_reviews)
     return round(min(max(rating, 1.0), 5.0), 1)
 
 
@@ -343,8 +330,8 @@ def add_data_quality_issues(products: list[dict], rng: random.Random) -> list[di
 
 def with_messy_fields(product: dict, rng: random.Random) -> dict:
     messy = dict(product)
-    messy["currency"], messy["price"] = formatted_price(product["price"], rng)
-    messy["date_added"] = formatted_date(date.fromisoformat(product["date_added"]), rng)
+    messy["currency"], messy["price"] = random_price_representation(product["price"], rng)
+    messy["date_added"] = random_date_representation(date.fromisoformat(product["date_added"]), rng)
     if rng.random() < MISSING_VALUE_SHARE:
         messy["rating"] = None
     if rng.random() < MISSING_VALUE_SHARE:
@@ -352,28 +339,27 @@ def with_messy_fields(product: dict, rng: random.Random) -> dict:
     return messy
 
 
-def formatted_price(price_pln: float, rng: random.Random) -> tuple[str, str]:
+def random_price_representation(price_pln: float, rng: random.Random) -> tuple[str, str]:
     if rng.random() >= FOREIGN_CURRENCY_SHARE:
         polish_amount = f"{price_pln:,.2f}".replace(",", " ").replace(".", ",")
-        return "PLN", f"{polish_amount} zł"  # e.g. "4 499,00 zł"
+        return "PLN", f"{polish_amount} zł"
 
     currency = rng.choice(list(PLN_PER_UNIT))
     amount = round(price_pln / PLN_PER_UNIT[currency]) - 0.01
     symbol = "€" if currency == "EUR" else "$"
-    return currency, f"{symbol}{amount:,.2f}"  # e.g. "€1,045.99" - comma as thousands separator
+    return currency, f"{symbol}{amount:,.2f}"
 
 
-def formatted_date(added_on: date, rng: random.Random) -> str:
+def random_date_representation(added_on: date, rng: random.Random) -> str:
     date_format = rng.choices(list(DATE_FORMAT_WEIGHTS), weights=DATE_FORMAT_WEIGHTS.values())[0]
     if date_format == "iso":
-        return added_on.isoformat()  # 2026-08-26
+        return added_on.isoformat()
     if date_format == "dotted":
-        return added_on.strftime("%d.%m.%Y")  # 26.08.2026
+        return added_on.strftime("%d.%m.%Y")
     return "wczoraj"
 
 
 def spread_duplicates_across_pages(products: list[dict], rng: random.Random) -> list[dict]:
-    """Fill every page up to PAGE_SIZE with copies of products that live on other pages."""
     unique_per_page = math.ceil(len(products) / PAGE_COUNT)
     duplicated_ids = set()
     catalog = []
