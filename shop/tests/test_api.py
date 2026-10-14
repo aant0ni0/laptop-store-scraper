@@ -10,7 +10,29 @@ CATALOG = json.loads(DATA_PATH.read_text("utf-8"))
 
 @pytest.fixture
 def client():
-    return create_app().test_client()
+    app = create_app()
+    app.config["CHUNK_DELAY_SECONDS"] = (0, 0)
+    return app.test_client()
+
+
+def test_chunk_response_is_delayed_by_configured_range(monkeypatch):
+    recorded_delays = []
+    monkeypatch.setattr("shop.app.time.sleep", recorded_delays.append)
+
+    create_app().test_client().get("/api/products?page=1")
+
+    assert len(recorded_delays) == 1
+    assert 0.3 <= recorded_delays[0] <= 2.0
+
+
+@pytest.mark.parametrize("path", ["/api/products/1", "/api/products/1/specs"])
+def test_details_and_specs_are_not_delayed(monkeypatch, path):
+    recorded_delays = []
+    monkeypatch.setattr("shop.app.time.sleep", recorded_delays.append)
+
+    create_app().test_client().get(path)
+
+    assert recorded_delays == []
 
 
 def test_first_chunk_contains_listing_fields_only(client):

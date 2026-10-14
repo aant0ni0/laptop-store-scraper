@@ -1,4 +1,6 @@
 import json
+import random
+import time
 from pathlib import Path
 
 from flask import Flask, request
@@ -29,6 +31,7 @@ def create_app(data_path: Path = DATA_PATH) -> Flask:
     app = Flask(__name__, static_folder=WEB_DIR, static_url_path="")
     app.json.sort_keys = False
     app.json.ensure_ascii = False
+    app.config["CHUNK_DELAY_SECONDS"] = (0.3, 2.0)
 
     catalog = json.loads(data_path.read_text("utf-8"))
     products_by_id = {product["id"]: product for product in catalog}
@@ -56,6 +59,7 @@ def create_app(data_path: Path = DATA_PATH) -> Flask:
 
         page_entries = catalog[(page - 1) * PAGE_SIZE : page * PAGE_SIZE]
         chunk = page_entries[offset : offset + limit]
+        time.sleep(random.uniform(*app.config["CHUNK_DELAY_SECONDS"]))
         return {
             "page": page,
             "page_count": PAGE_COUNT,

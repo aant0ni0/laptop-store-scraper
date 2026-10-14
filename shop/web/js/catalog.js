@@ -9,6 +9,7 @@ const pagination = document.querySelector(".pagination");
 const statusMessage = document.querySelector(".status");
 const loadTrigger = document.querySelector(".load-trigger");
 const retryButton = document.querySelector(".retry");
+const loadingIndicator = document.querySelector(".loading");
 
 const productLayout = page % 2 === 1 ? createTableLayout() : createCardLayout();
 const loadTriggerObserver = new IntersectionObserver(
@@ -30,6 +31,7 @@ async function loadNextChunk() {
     return;
   }
   isLoading = true;
+  loadingIndicator.hidden = false;
   hideLoadError();
   try {
     const chunk = await fetchChunk(loadedCount);
@@ -54,6 +56,7 @@ async function loadNextChunk() {
     }
   } finally {
     isLoading = false;
+    loadingIndicator.hidden = true;
   }
 }
 
