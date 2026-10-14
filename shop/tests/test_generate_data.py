@@ -1,8 +1,20 @@
 import json
+import random
+import re
+from collections import defaultdict
 from statistics import correlation
 
 import pytest
-from generate_data import OUTPUT_PATH, PRODUCT_COUNT, generate_products
+from generate_data import (
+    DUPLICATE_COUNT,
+    OUTPUT_PATH,
+    PAGE_COUNT,
+    PAGE_SIZE,
+    PRODUCT_COUNT,
+    SEED,
+    generate_catalog,
+    generate_products,
+)
 
 EXPECTED_ATTRIBUTES = {
     # listing
@@ -34,9 +46,24 @@ EXPECTED_ATTRIBUTES = {
 }
 
 
+PLN_PRICE = re.compile(r"^\d{1,3}( \d{3})*,\d{2} zł$")  # 4 499,00 zł
+FOREIGN_PRICE = re.compile(r"^[€$]\d{1,3}(,\d{3})*\.\d{2}$")  # €1,045.99
+DATE_FORMATS = {
+    "iso": re.compile(r"^\d{4}-\d{2}-\d{2}$"),
+    "dotted": re.compile(r"^\d{2}\.\d{2}\.\d{4}$"),
+    "yesterday": re.compile(r"^wczoraj$"),
+}
+
+
 @pytest.fixture(scope="module")
 def products() -> list[dict]:
-    return generate_products()
+    """Clean products, before data quality issues are added."""
+    return generate_products(random.Random(SEED))
+
+
+@pytest.fixture(scope="module")
+def catalog() -> list[dict]:
+    return generate_catalog()
 
 
 def test_generates_expected_number_of_unique_products(products):
@@ -77,10 +104,59 @@ def test_specs_drive_price_and_weight(products):
     assert correlation(screens, weights) > 0.7
 
 
+def test_catalog_spreads_duplicates_across_pages(catalog):
+    assert len(catalog) == PAGE_COUNT * PAGE_SIZE
+    assert len({product["id"] for product in catalog}) == PRODUCT_COUNT >= 400
+
+    pages_by_id = defaultdict(list)
+    for position, product in enumerate(catalog):
+        pages_by_id[product["id"]].append(position // PAGE_SIZE)
+    duplicated_pages = [pages for pages in pages_by_id.values() if len(pages) > 1]
+
+    assert len(duplicated_pages) == DUPLICATE_COUNT >= 8
+    assert all(len(set(pages)) == len(pages) for pages in duplicated_pages)
+
+
+def test_duplicates_are_exact_copies(catalog):
+    first_seen = {}
+    for product in catalog:
+        assert first_seen.setdefault(product["id"], product) == product
+
+
+def test_prices_are_text_in_several_currencies(catalog):
+    for product in catalog:
+        pattern = PLN_PRICE if product["currency"] == "PLN" else FOREIGN_PRICE
+        assert pattern.match(product["price"]), product["price"]
+
+    foreign_share = share(catalog, lambda product: product["currency"] != "PLN")
+    assert {product["currency"] for product in catalog} == {"PLN", "EUR", "USD"}
+    assert 0.1 <= foreign_share <= 0.2
+
+
+@pytest.mark.parametrize("field", ["rating", "warranty_months"])
+def test_two_fields_have_missing_values(catalog, field):
+    assert share(catalog, lambda product: product[field] is None) >= 0.15
+
+
+def test_dates_use_inconsistent_formats(catalog):
+    formats_seen = set()
+    for product in catalog:
+        matching = [
+            name for name, pattern in DATE_FORMATS.items() if pattern.match(product["date_added"])
+        ]
+        assert len(matching) == 1, product["date_added"]
+        formats_seen.add(matching[0])
+    assert formats_seen == set(DATE_FORMATS)
+
+
 def test_generation_is_deterministic():
-    assert generate_products() == generate_products()
+    assert generate_catalog() == generate_catalog()
 
 
-def test_saved_catalog_matches_generator(products):
+def test_saved_catalog_matches_generator(catalog):
     saved = json.loads(OUTPUT_PATH.read_text("utf-8"))
-    assert saved == products, "products.json is stale - run scripts/generate_data.py"
+    assert saved == catalog, "products.json is stale - run scripts/generate_data.py"
+
+
+def share(products: list[dict], predicate) -> float:
+    return sum(1 for product in products if predicate(product)) / len(products)

@@ -1,7 +1,12 @@
 """Generate the laptop catalog used by the shop (shop/data/products.json).
 
-Every product is built step by step: the category decides which components fit,
-components decide the price and weight, and a fixed seed makes the output reproducible.
+Generation runs in two steps:
+1. Clean products: the category decides which components fit, components decide
+   the price and weight.
+2. Data quality issues the scraper has to handle: prices as text in several currencies,
+   missing values, inconsistent date formats and duplicates spread across pages.
+
+A fixed seed makes the output reproducible.
 """
 
 import json
@@ -9,6 +14,7 @@ import math
 import random
 from dataclasses import dataclass
 from datetime import date, timedelta
+from itertools import batched
 from pathlib import Path
 
 SEED = 42
@@ -17,6 +23,14 @@ PRODUCT_COUNT = 438
 CATALOG_DATE = date(2026, 10, 1)
 CATALOG_AGE_DAYS = 730
 OUTPUT_PATH = Path(__file__).resolve().parents[1] / "data" / "products.json"
+
+PAGE_COUNT = 8
+PAGE_SIZE = 56
+DUPLICATE_COUNT = PAGE_COUNT * PAGE_SIZE - PRODUCT_COUNT
+FOREIGN_CURRENCY_SHARE = 0.15
+MISSING_VALUE_SHARE = 0.2
+PLN_PER_UNIT = {"EUR": 4.30, "USD": 3.95}
+DATE_FORMAT_WEIGHTS = {"iso": 55, "dotted": 40, "yesterday": 5}
 
 CPUS_BY_TIER = {
     "budget": ["Intel Core i3-1215U", "Intel Core i3-1315U", "AMD Ryzen 3 7320U"],
@@ -201,8 +215,13 @@ SERIES_BY_CATEGORY = {
 }
 
 
-def generate_products(seed: int = SEED, count: int = PRODUCT_COUNT) -> list[dict]:
+def generate_catalog(seed: int = SEED) -> list[dict]:
     rng = random.Random(seed)
+    products = generate_products(rng)
+    return add_data_quality_issues(products, rng)
+
+
+def generate_products(rng: random.Random, count: int = PRODUCT_COUNT) -> list[dict]:
     products = []
     used_names = set()
     for product_id in range(1, count + 1):
@@ -319,10 +338,65 @@ def product_rating(review_count: int, rng: random.Random) -> float:
     return round(min(max(rating, 1.0), 5.0), 1)
 
 
+def add_data_quality_issues(products: list[dict], rng: random.Random) -> list[dict]:
+    messy_products = [with_messy_fields(product, rng) for product in products]
+    return spread_duplicates_across_pages(messy_products, rng)
+
+
+def with_messy_fields(product: dict, rng: random.Random) -> dict:
+    messy = dict(product)
+    messy["currency"], messy["price"] = formatted_price(product["price"], rng)
+    messy["date_added"] = formatted_date(date.fromisoformat(product["date_added"]), rng)
+    if rng.random() < MISSING_VALUE_SHARE:
+        messy["rating"] = None
+    if rng.random() < MISSING_VALUE_SHARE:
+        messy["warranty_months"] = None
+    return messy
+
+
+def formatted_price(price_pln: float, rng: random.Random) -> tuple[str, str]:
+    if rng.random() >= FOREIGN_CURRENCY_SHARE:
+        polish_amount = f"{price_pln:,.2f}".replace(",", " ").replace(".", ",")
+        return "PLN", f"{polish_amount} zł"  # e.g. "4 499,00 zł"
+
+    currency = rng.choice(list(PLN_PER_UNIT))
+    amount = round(price_pln / PLN_PER_UNIT[currency]) - 0.01
+    symbol = "€" if currency == "EUR" else "$"
+    return currency, f"{symbol}{amount:,.2f}"  # e.g. "€1,045.99" - comma as thousands separator
+
+
+def formatted_date(added_on: date, rng: random.Random) -> str:
+    date_format = rng.choices(list(DATE_FORMAT_WEIGHTS), weights=DATE_FORMAT_WEIGHTS.values())[0]
+    if date_format == "iso":
+        return added_on.isoformat()  # 2026-08-26
+    if date_format == "dotted":
+        return added_on.strftime("%d.%m.%Y")  # 26.08.2026
+    return "wczoraj"
+
+
+def spread_duplicates_across_pages(products: list[dict], rng: random.Random) -> list[dict]:
+    """Fill every page up to PAGE_SIZE with copies of products that live on other pages."""
+    unique_per_page = math.ceil(len(products) / PAGE_COUNT)
+    duplicated_ids = set()
+    catalog = []
+    for page in batched(products, unique_per_page):
+        page_entries = list(page)
+        page_ids = {product["id"] for product in page_entries}
+        while len(page_entries) < PAGE_SIZE:
+            candidate = rng.choice(products)
+            if candidate["id"] in page_ids or candidate["id"] in duplicated_ids:
+                continue
+            duplicated_ids.add(candidate["id"])
+            page_entries.insert(rng.randint(0, len(page_entries)), dict(candidate))
+        catalog.extend(page_entries)
+    return catalog
+
+
 def main() -> None:
-    products = generate_products()
-    OUTPUT_PATH.write_text(json.dumps(products, ensure_ascii=False, indent=2) + "\n", "utf-8")
-    print(f"Saved {len(products)} products to {OUTPUT_PATH}")
+    catalog = generate_catalog()
+    OUTPUT_PATH.write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", "utf-8")
+    unique_count = len({product["id"] for product in catalog})
+    print(f"Saved {len(catalog)} entries ({unique_count} unique products) to {OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
