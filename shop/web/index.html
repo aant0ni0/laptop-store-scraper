@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Laptop Store – katalog laptopów</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script type="module" src="/js/catalog.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-logo" href="/">Laptop Store</a>
+    </header>
+
+    <main class="page">
+      <h1 class="page-title">Laptopy</h1>
+      <section class="catalog" aria-label="Lista produktów"></section>
+      <div class="load-trigger" aria-hidden="true"></div>
+      <p class="loading" hidden><span class="spinner" aria-hidden="true"></span>Ładowanie…</p>
+      <p class="status" role="status"></p>
+      <button class="retry" type="button" hidden>Spróbuj ponownie</button>
+      <nav class="pagination" aria-label="Strony katalogu"></nav>
+    </main>
+  </body>
+</html>
