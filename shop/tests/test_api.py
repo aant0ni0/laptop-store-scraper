@@ -88,3 +88,18 @@ def test_polish_characters_are_not_escaped(client):
     response = client.get("/api/products?page=1&limit=56")
 
     assert "zł" in response.get_data(as_text=True)
+
+
+def test_index_page_is_served_without_products(client):
+    response = client.get("/")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert '<section class="catalog"' in html
+    assert "data-id" not in html
+    assert CATALOG[0]["name"] not in html
+
+
+@pytest.mark.parametrize("path", ["/js/catalog.js", "/css/styles.css"])
+def test_page_assets_are_served(client, path):
+    assert client.get(path).status_code == 200

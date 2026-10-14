@@ -13,7 +13,7 @@ Kontrakt projektu. Każdy punkt odhaczamy dopiero z dowodem (test, komenda albo 
 - [ ] dwie struktury: tabela (podstrony nieparzyste) i karty `article` (parzyste)
 - [ ] semantyczne klasy i atrybuty (`product`, `price`, `data-id`), bez generowanych nazw
 - [ ] rekordy w pliku JSON, wstawiane przez `fetch` — w źródle HTML (Ctrl+U) brak rekordów
-- [ ] doładowywanie porcjami — przycisk „Wczytaj więcej”
+- [ ] doładowywanie porcjami przy przewijaniu strony (infinite scroll)
 - [ ] sztuczne opóźnienie 300–2000 ms przy każdej porcji
 
 ### Utrudnienia z 4.0 (min. 3 — wybrane 4)
