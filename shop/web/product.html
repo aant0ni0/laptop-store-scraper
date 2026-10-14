@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Laptop Store – szczegóły produktu</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+    <script type="module" src="/js/product.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="site-logo" href="/">Laptop Store</a>
+    </header>
+
+    <main class="page">
+      <a class="back-link" href="/">← Wróć do katalogu</a>
+      <p class="status" role="status"></p>
+
+      <article class="product product-details" hidden>
+        <h1 class="product-name"></h1>
+        <p class="price"></p>
+
+        <div class="tabs" role="tablist">
+          <button class="tab" id="tab-overview" type="button" role="tab" aria-controls="panel-overview" aria-selected="true">
+            Informacje
+          </button>
+          <button class="tab" id="tab-specs" type="button" role="tab" aria-controls="panel-specs" aria-selected="false">
+            Specyfikacja
+          </button>
+        </div>
+        <section class="tab-panel" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview"></section>
+        <section class="tab-panel" id="panel-specs" role="tabpanel" aria-labelledby="tab-specs" hidden></section>
+      </article>
+    </main>
+  </body>
+</html>

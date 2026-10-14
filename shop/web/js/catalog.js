@@ -1,22 +1,7 @@
+import { fetchJson } from "./api.js";
+import { LISTING_ATTRIBUTES, attributeList, cssClass, displayValue, element } from "./product-view.js";
+
 const CHUNK_SIZE = 14;
-const MISSING_VALUE = "—";
-
-const LISTING_ATTRIBUTES = [
-  { key: "category", label: "Kategoria" },
-  { key: "brand", label: "Producent" },
-  { key: "availability", label: "Dostępność" },
-  { key: "rating", label: "Ocena" },
-  { key: "review_count", label: "Liczba opinii" },
-  { key: "date_added", label: "Data dodania" },
-  { key: "warranty_months", label: "Gwarancja", format: (months) => `${months} mies.` },
-];
-
-class CatalogRequestError extends Error {
-  constructor(status) {
-    super(`Catalog request failed with status ${status}`);
-    this.status = status;
-  }
-}
 
 const page = currentPageNumber();
 const catalogSection = document.querySelector(".catalog");
@@ -93,13 +78,9 @@ function hideLoadError() {
   retryButton.hidden = true;
 }
 
-async function fetchChunk(offset) {
+function fetchChunk(offset) {
   const query = new URLSearchParams({ page, offset, limit: CHUNK_SIZE });
-  const response = await fetch(`/api/products?${query}`);
-  if (!response.ok) {
-    throw new CatalogRequestError(response.status);
-  }
-  return response.json();
+  return fetchJson(`/api/products?${query}`);
 }
 
 function currentPageNumber() {
@@ -144,14 +125,11 @@ function productCard(product) {
   const name = element("h2", "product-name");
   name.append(productLink(product));
 
-  const attributes = element("dl", "product-attributes");
-  for (const attribute of LISTING_ATTRIBUTES) {
-    attributes.append(
-      element("dt", null, attribute.label),
-      element("dd", cssClass(attribute), displayValue(product, attribute)),
-    );
-  }
-  card.append(name, element("p", "price", product.price), attributes);
+  card.append(
+    name,
+    element("p", "price", product.price),
+    attributeList(product, LISTING_ATTRIBUTES),
+  );
   return card;
 }
 
@@ -179,27 +157,4 @@ function renderPagination(pageCount) {
     links.push(link);
   }
   pagination.replaceChildren(...links);
-}
-
-function displayValue(product, attribute) {
-  const value = product[attribute.key];
-  if (value === null || value === undefined) {
-    return MISSING_VALUE;
-  }
-  return attribute.format ? attribute.format(value) : String(value);
-}
-
-function cssClass(attribute) {
-  return attribute.key.replaceAll("_", "-");
-}
-
-function element(tag, className, text) {
-  const node = document.createElement(tag);
-  if (className) {
-    node.className = className;
-  }
-  if (text !== undefined) {
-    node.textContent = text;
-  }
-  return node;
 }

@@ -100,6 +100,25 @@ def test_index_page_is_served_without_products(client):
     assert CATALOG[0]["name"] not in html
 
 
-@pytest.mark.parametrize("path", ["/js/catalog.js", "/css/styles.css"])
+def test_product_page_is_served_without_product_data(client):
+    response = client.get("/product.html?id=1")
+    html = response.get_data(as_text=True)
+
+    assert response.status_code == 200
+    assert 'class="product product-details"' in html
+    assert CATALOG[0]["name"] not in html
+    assert CATALOG[0]["cpu"] not in html
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/js/catalog.js",
+        "/js/product.js",
+        "/js/api.js",
+        "/js/product-view.js",
+        "/css/styles.css",
+    ],
+)
 def test_page_assets_are_served(client, path):
     assert client.get(path).status_code == 200
