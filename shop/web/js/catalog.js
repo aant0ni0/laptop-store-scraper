@@ -11,6 +11,13 @@ const LISTING_ATTRIBUTES = [
   { key: "warranty_months", label: "Gwarancja", format: (months) => `${months} mies.` },
 ];
 
+class CatalogRequestError extends Error {
+  constructor(status) {
+    super(`Catalog request failed with status ${status}`);
+    this.status = status;
+  }
+}
+
 const page = currentPageNumber();
 const catalogSection = document.querySelector(".catalog");
 const pagination = document.querySelector(".pagination");
@@ -45,15 +52,21 @@ async function loadNextChunk() {
       productLayout.container.append(productLayout.renderProduct(product));
     }
     loadedCount += chunk.items.length;
-    renderPagination(chunk.page_count);
+    if (pagination.childElementCount === 0) {
+      renderPagination(chunk.page_count);
+    }
     if (chunk.has_more) {
       watchLoadTrigger();
     } else {
       loadTriggerObserver.disconnect();
     }
-  } catch {
+  } catch (error) {
     loadTriggerObserver.disconnect();
-    showLoadError();
+    if (error.status === 400) {
+      showInvalidPageMessage();
+    } else {
+      showLoadError();
+    }
   } finally {
     isLoading = false;
   }
@@ -69,6 +82,12 @@ function showLoadError() {
   retryButton.hidden = false;
 }
 
+function showInvalidPageMessage() {
+  const firstPageLink = element("a", null, "Przejdź do strony 1");
+  firstPageLink.href = "/?page=1";
+  statusMessage.replaceChildren("Nieprawidłowy numer strony. ", firstPageLink);
+}
+
 function hideLoadError() {
   statusMessage.textContent = "";
   retryButton.hidden = true;
@@ -78,7 +97,7 @@ async function fetchChunk(offset) {
   const query = new URLSearchParams({ page, offset, limit: CHUNK_SIZE });
   const response = await fetch(`/api/products?${query}`);
   if (!response.ok) {
-    throw new Error(`Catalog request failed with status ${response.status}`);
+    throw new CatalogRequestError(response.status);
   }
   return response.json();
 }
