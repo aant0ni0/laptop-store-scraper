@@ -7,6 +7,8 @@ Projekt pary na Laboratorium nr 1 — parser strony www (poziom 5.0).
 - **AUTOR** buduje sklep z laptopami (`shop/`), którego produkty są wstrzykiwane JavaScriptem.
 - **PARSER** pisze scraper w Selenium (`scraper/`), który pobiera, czyści i analizuje dane.
 
+Lista wymagań z dowodami realizacji: [docs/requirements.md](docs/requirements.md).
+
 ## Struktura
 
 ```
@@ -76,6 +78,59 @@ uv run pytest
 ```
 
 Generator jest deterministyczny (stały seed), a `data/products.json` jest w repozytorium — regeneracja jest potrzebna tylko po zmianie generatora. Test `test_saved_catalog_matches_generator` pilnuje, żeby plik był aktualny.
+
+## Scraper
+
+Wymaga działającego sklepu (patrz wyżej) i zainstalowanego Chrome — sterownik pobiera Selenium Manager.
+
+### Uruchomienie
+
+```bash
+cd scraper
+uv run python -m scraper                      # pełny przebieg w Selenium (headless), ok. 10 min
+uv run python -m scraper --mode api           # ten sam zbiór z API JSON, bez przeglądarki
+uv run python -m scraper --resume             # dokończenie przerwanego przebiegu (Ctrl+C)
+uv run python -m scraper --pages 1 --limit 20 --no-headless   # szybki podgląd z oknem przeglądarki
+```
+
+Pełny przebieg trwa ok. 10 minut, bo limit sklepu to 20 zapytań na 10 s, a scraper robi ok. 900 zapytań do API (porcje katalogu, szczegóły i specyfikacja każdego produktu).
+
+| Parametr | Domyślnie | Znaczenie |
+|---|---|---|
+| `--base-url` | `http://127.0.0.1:8000` | adres sklepu (`127.0.0.1`, bo na Windows `localhost` dokłada ~2 s do każdego połączenia `requests`) |
+| `--mode` | `selenium` | `selenium` — strona renderowana w Chrome; `api` — bezpośrednio `/api/*` |
+| `--pages`, `--limit` | wszystkie | maks. liczba podstron katalogu / produktów, których szczegóły są pobierane |
+| `--output` | `output/laptops` | ścieżka bez rozszerzenia |
+| `--delay` | `0.6` | odstęp między zapytaniami w sekundach (wymagane min. 0,5 s) |
+| `--headless / --no-headless` | headless | Chrome bez okna lub z oknem |
+| `--resume` | — | wznowienie od `output/checkpoint_<mode>.json` |
+| `--max-attempts`, `--timeout` | `5`, `15` | limit prób ponawiania (1 s, 2 s, 4 s…) i czas oczekiwania na element |
+
+### Wyniki (`scraper/output/`)
+
+| Plik | Zawartość |
+|---|---|
+| `laptops.csv`, `laptops.xlsx` | oczyszczone dane: 1 wiersz = 1 laptop, bez duplikatów, ceny jako liczby, `price_pln` przeliczone kursem NBP |
+| `laptops_raw.csv` | surowe teksty ze strony, z duplikatami — do kontroli jakości |
+| `laptops_summary.json` | podsumowanie: czas, liczba stron, rekordów, duplikatów, błędów, odpowiedzi 429, odrzuconych wartości |
+| `scraper.log` | log przebiegu |
+
+### Narzędzia do sprawozdania
+
+```bash
+uv run python -m scraper.raw_vs_dom          # rekordy w surowym HTML vs w DOM po wykonaniu skryptów
+uv run python -m scraper.benchmark           # czas i pamięć: API vs Selenium headless vs z oknem
+uv run python -m scraper --mode api --delay 0 --pages 1 --limit 40 --output output/http429   # wymuszenie 429
+```
+
+Analiza danych: `notebooks/analysis.ipynb` (wykresy zapisuje do `report/figures/`).
+
+### Testy
+
+```bash
+cd scraper
+uv run pytest
+```
 
 ## Konwencje
 
