@@ -30,11 +30,17 @@ laptop-store-scraper/
 ## Wymagania
 
 - [uv](https://docs.astral.sh/uv/) — instaluje właściwą wersję Pythona (3.12) i zależności.
+- Google Chrome — dla scrapera w Selenium.
+
+## Szybki start
 
 ```bash
-uv sync --directory shop
-uv sync --directory scraper
+make setup     # instalacja zależności (raz)
+make shop      # terminal 1: sklep na http://localhost:8000
+make demo      # terminal 2: scraper z widocznym oknem Chrome (1 podstrona, 3 produkty)
 ```
+
+Wszystkie skróty: `make help` (pełny przebieg, tryb API, porównanie HTML vs DOM, benchmark, testy, lint). Pełne komendy są opisane niżej.
 
 ## Sklep
 
